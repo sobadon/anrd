@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -13,16 +14,16 @@ import (
 )
 
 type programSqlite struct {
-	UUID        string    `db:"uuid"`
-	ID          int       `db:"id"`
-	Station     string    `db:"station"`
-	Title       string    `db:"title"`
-	Episode     string    `db:"episode"`
-	Start       time.Time `db:"start"`
-	End         time.Time `db:"end"`
-	Status      string    `db:"status"`
-	StreamType  string    `db:"stream_type"`
-	PlaylistURL string    `db:"playlist_url"`
+	UUID        string         `db:"uuid"`
+	ID          int            `db:"id"`
+	Station     string         `db:"station"`
+	Title       string         `db:"title"`
+	Episode     sql.NullString `db:"episode"`
+	Start       time.Time      `db:"start"`
+	End         time.Time      `db:"end"`
+	Status      string         `db:"status"`
+	StreamType  string         `db:"stream_type"`
+	PlaylistURL sql.NullString `db:"playlist_url"`
 }
 
 func programSqliteToModelProgram(pgramSqlite programSqlite) program.Program {
@@ -31,27 +32,43 @@ func programSqliteToModelProgram(pgramSqlite programSqlite) program.Program {
 		ID:          pgramSqlite.ID,
 		Station:     program.Station(pgramSqlite.Station),
 		Title:       pgramSqlite.Title,
-		Episode:     pgramSqlite.Episode,
+		Episode:     pgramSqlite.Episode.String, // 空文字になってくれればよい
 		Start:       pgramSqlite.Start,
 		End:         pgramSqlite.End,
 		Status:      program.Status(pgramSqlite.Status),
 		StreamType:  program.StreamType(pgramSqlite.StreamType),
-		PlaylistURL: pgramSqlite.PlaylistURL,
+		PlaylistURL: pgramSqlite.PlaylistURL.String,
 	}
 }
 
 func modelProgramToProgramSqlite(pgram program.Program) programSqlite {
+	var episode sql.NullString
+	if pgram.Episode == "" {
+		episode.Valid = false
+	} else {
+		episode.Valid = true
+		episode.String = pgram.Episode
+	}
+
+	var playlistURL sql.NullString
+	if pgram.PlaylistURL == "" {
+		playlistURL.Valid = false
+	} else {
+		playlistURL.Valid = true
+		playlistURL.String = pgram.PlaylistURL
+	}
+
 	return programSqlite{
 		UUID:        pgram.UUID,
 		ID:          pgram.ID,
 		Station:     pgram.Station.String(),
-		Episode:     pgram.Episode,
+		Episode:     episode,
 		Title:       pgram.Title,
 		Start:       pgram.Start,
 		End:         pgram.End,
 		Status:      pgram.Status.String(),
 		StreamType:  pgram.StreamType.String(),
-		PlaylistURL: pgram.PlaylistURL,
+		PlaylistURL: playlistURL,
 	}
 }
 
