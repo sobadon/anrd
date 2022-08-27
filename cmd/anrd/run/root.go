@@ -3,9 +3,12 @@ package run
 import (
 	"context"
 	"log"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/caarlos0/env/v6"
+	"github.com/sobadon/anrd/domain/model/recorder"
 	"github.com/sobadon/anrd/infrastructures/onsen"
 	"github.com/sobadon/anrd/infrastructures/sqlite"
 	"github.com/sobadon/anrd/usecase"
@@ -53,10 +56,27 @@ func run() error {
 	ctx, _ = context.WithTimeout(ctx, 1*time.Minute)
 
 	// とりあえず番組情報取得のみ
-	err = ucRecorder.UpdateProgram(ctx)
+	// err = ucRecorder.UpdateProgram(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+
+	recorderConfig := recorder.Config{
+		ArchiveDir: config.ArchiveDir,
+		// TODO
+	}
+
+	// とりあえず録画のみ
+	err = ucRecorder.RecPrepare(ctx, recorderConfig)
 	if err != nil {
 		return err
 	}
+
+	quit := make(chan os.Signal)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	log.Println("Interrupt")
+	defer db.Close()
 
 	return nil
 }

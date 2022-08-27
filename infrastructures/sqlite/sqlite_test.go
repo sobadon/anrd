@@ -275,6 +275,7 @@ func Test_client_LoadOndemandScheduled(t *testing.T) {
 			name: "正常に番組を返す",
 			prepare: func(db *sqlx.DB) error {
 				_, err := db.Exec(`insert into programs (uuid, id, station, title, episode, start, end, status, stream_type, playlist_url) values
+					("e07df7c6-eae8-40f8-8922-6b7ef0497dc8", "11132", "onsen", "セブン-イレブン presents 佐倉としたい大西", "第332回", "2022-08-21 00:00:00+09:00", "0001-01-01 00:00:00+00:00", "scheduled", "ondemand", null),
 					("4ba3b9ff-5e0b-44ae-a99d-6dfb27deac0e", "11133", "onsen", "セブン-イレブン presents 佐倉としたい大西", "第333回", "2022-08-22 00:00:00+09:00", "0001-01-01 00:00:00+00:00", "done", "ondemand", "https://onsen.test/playlist.m3u8"),
 					("89350da4-7f3b-4438-b99f-41ae9aa52bf5", "11134", "onsen", "セブン-イレブン presents 佐倉としたい大西", "第334回", "2022-08-23 00:00:00+09:00", "0001-01-01 00:00:00+00:00", "scheduled", "ondemand", "https://onsen.test/playlist.m3u8")
 `)

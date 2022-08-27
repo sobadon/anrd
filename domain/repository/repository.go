@@ -6,11 +6,12 @@ import (
 
 	"github.com/sobadon/anrd/domain/model/date"
 	"github.com/sobadon/anrd/domain/model/program"
+	"github.com/sobadon/anrd/domain/model/recorder"
 )
 
 type Station interface {
 	GetPrograms(ctx context.Context, date date.Date) ([]program.Program, error)
-	// Rec(ctx context.Context, configRec recorder.Config, targetPgram program.Program) error
+	Rec(ctx context.Context, config recorder.Config, targetPgram program.Program) error
 }
 
 type ProgramPersistence interface {
@@ -20,6 +21,8 @@ type ProgramPersistence interface {
 	// LoadStartIn(ctx context.Context, now time.Time, duration time.Duration) ([]program.Program, error)
 
 	// StreamType が ondemand な番組で、scheduled なものを一件取得
+	// 返されるエラー
+	// - errutil.ErrDatabaseNotFoundProgram
 	LoadOndemandScheduled(ctx context.Context) (*program.Program, error)
 
 	// pgram の status を newStatus に変更

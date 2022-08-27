@@ -197,11 +197,10 @@ func (c *client) ChangeStatus(ctx context.Context, pgram program.Program, newSta
 	return nil
 }
 
-// 返されるエラー
-// - errutil.ErrDatabaseNotFoundProgram
 func (c *client) LoadOndemandScheduled(ctx context.Context) (*program.Program, error) {
 	var pgramsSqlite []programSqlite
-	err := c.DB.SelectContext(ctx, &pgramsSqlite, `select uuid, id, station, title, episode, start, end, status, stream_type, playlist_url from programs where status = 'scheduled' limit 1`)
+	// playlist_url が null であれば何らかの会員限定コンテンツとする
+	err := c.DB.SelectContext(ctx, &pgramsSqlite, `select uuid, id, station, title, episode, start, end, status, stream_type, playlist_url from programs where status = 'scheduled' and playlist_url is not null limit 1`)
 	if err != nil {
 		return nil, errors.Wrap(errutil.ErrDatabaseQuery, err.Error())
 	}
