@@ -14,11 +14,14 @@ type Station interface {
 }
 
 type ProgramPersistence interface {
-	// Save(ctx context.Context, pgram program.Program) error
+	Save(ctx context.Context, pgram program.Program) error
 
 	// duration 後までに始まる番組を取得
 	// LoadStartIn(ctx context.Context, now time.Time, duration time.Duration) ([]program.Program, error)
 
+	// StreamType が ondemand な番組で、scheduled なものを一件取得
+	LoadOndemandScheduled(ctx context.Context) (*program.Program, error)
+
 	// pgram の status を newStatus に変更
-	// ChangeStatus(ctx context.Context, pgram program.Program, newStatus program.Status) error
+	ChangeStatus(ctx context.Context, pgram program.Program, newStatus program.Status) error
 }
