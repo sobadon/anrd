@@ -199,7 +199,7 @@ func onsenProgramToPrograms(onsenPgram onsenProgram) ([]program.Program, error) 
 			}
 		}
 
-		pgram := program.NewProgramOndemand(content.ID, onsenPgram.Title, content.Title, contentDate, content.StreamingURL)
+		pgram := program.NewProgramOndemand(content.ID, program.StationOnsen, onsenPgram.Title, content.Title, contentDate, content.StreamingURL)
 		pgrams = append(pgrams, pgram)
 	}
 	return pgrams, nil

@@ -3,12 +3,18 @@ package program
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/sobadon/anrd/domain/model/date"
 )
 
 type Program struct {
-	// ユニークであろう ID
+	// すべての station をまたいでユニークな ID
+	UUID string
+
+	// station 毎にユニークであろう ID
 	ID int
+
+	Station Station
 
 	// 番組タイトル
 	Title string
@@ -53,9 +59,12 @@ func Dummies(now time.Time) []Program {
 }
 */
 
-func NewProgramOndemand(id int, title string, episode string, date date.Date, playlistURL string) Program {
+func NewProgramOndemand(id int, station Station, title string, episode string, date date.Date, playlistURL string) Program {
 	return Program{
+		// panic 許容
+		UUID:        uuid.NewString(),
 		ID:          id,
+		Station:     station,
 		Title:       title,
 		Episode:     episode,
 		Start:       time.Time(date),

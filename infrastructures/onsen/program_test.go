@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/sobadon/anrd/domain/model/date"
 	"github.com/sobadon/anrd/domain/model/program"
 	"github.com/sobadon/anrd/internal/timeutil"
@@ -100,6 +101,7 @@ func Test_onsenProgramToPrograms(t *testing.T) {
 			want: []program.Program{
 				{
 					ID:          11134,
+					Station:     program.StationOnsen,
 					Title:       "セブン-イレブン presents 佐倉としたい大西",
 					Episode:     "第334回",
 					Start:       time.Date(2022, 8, 23, 0, 0, 0, 0, timeutil.LocationJST()),
@@ -110,6 +112,7 @@ func Test_onsenProgramToPrograms(t *testing.T) {
 				},
 				{
 					ID:          11054,
+					Station:     program.StationOnsen,
 					Title:       "セブン-イレブン presents 佐倉としたい大西",
 					Episode:     "第333回",
 					Start:       time.Date(2022, 8, 16, 0, 0, 0, 0, timeutil.LocationJST()),
@@ -129,7 +132,7 @@ func Test_onsenProgramToPrograms(t *testing.T) {
 				t.Errorf("onsenProgramToPrograms() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+			if diff := cmp.Diff(tt.want, got, cmpopts.IgnoreFields(program.Program{}, "UUID")); diff != "" {
 				t.Errorf("onsenProgramToPrograms() mismatch (-want +got):\n%s", diff)
 			}
 		})
