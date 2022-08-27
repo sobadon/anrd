@@ -1,2 +1,3 @@
 /anrd
 *.sqlite3
+/archive
