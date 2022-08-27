@@ -25,4 +25,4 @@ WORKDIR /app
 COPY --from=builder /workspace/anrd /app/
 COPY --from=downloader /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 
-ENTRYPOINT [ "/app/anrd run" ]
+ENTRYPOINT [ "/app/anrd" ]
