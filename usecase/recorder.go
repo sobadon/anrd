@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 	"errors"
-	"log"
 
+	"github.com/rs/zerolog/log"
 	"github.com/sobadon/anrd/domain/model/date"
 	"github.com/sobadon/anrd/domain/model/program"
 	"github.com/sobadon/anrd/domain/model/recorder"
@@ -40,20 +40,19 @@ func (r *ucRecorder) UpdateProgram(ctx context.Context) error {
 		}
 	}
 
+	log.Ctx(ctx).Info().Msg("successfully update program")
 	return nil
 }
 
 func (r *ucRecorder) RecPrepare(ctx context.Context, config recorder.Config) error {
 	targetPgram, err := r.programPersistence.LoadOndemandScheduled(ctx)
 	if errors.As(err, &errutil.ErrDatabaseNotFoundProgram) {
-		log.Println("not found program")
+		log.Ctx(ctx).Debug().Msg("not found program")
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-
-	log.Printf("RecPrepare: %+v", targetPgram)
 
 	go r.rec(ctx, config, *targetPgram)
 	return nil
@@ -80,18 +79,20 @@ func (r *ucRecorder) rec(ctx context.Context, config recorder.Config, targetPgra
 			err = r.onsen.Rec(ctx, config, targetPgram)
 		}
 		if err == nil {
+			log.Ctx(ctx).Info().Msgf("successfully rec program (program = %+v)", targetPgram)
 			err := r.programPersistence.ChangeStatus(ctx, targetPgram, program.StatusDone)
 			if err != nil {
-				log.Printf("%+v", err)
+				log.Ctx(ctx).Error().Msgf("%+v", err)
 				return
 			}
 			return
 		}
 
-		log.Printf("fail to rec")
+		log.Ctx(ctx).Warn().Msgf("failed to rec (retryCount = %d)", retryCount)
 		retryCount++
 	}
 
+	log.Ctx(ctx).Error().Msgf("rec retry count exceeded retryMaxCount (program = %+v)", targetPgram)
 	err = r.programPersistence.ChangeStatus(ctx, targetPgram, program.StatusFailed)
 	if err != nil {
 		log.Printf("%+v", err)

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/sobadon/anrd/domain/model/date"
 	"github.com/sobadon/anrd/domain/model/program"
 	"github.com/sobadon/anrd/internal/errutil"
@@ -138,6 +139,7 @@ type Content struct {
 }
 
 func (c *client) GetPrograms(ctx context.Context, _ date.Date) ([]program.Program, error) {
+	log.Ctx(ctx).Debug().Msg("get onsen program ...")
 	const programURL = "https://www.onsen.ag/web_api/programs"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, programURL, nil)
 	if err != nil {
@@ -168,6 +170,7 @@ func (c *client) GetPrograms(ctx context.Context, _ date.Date) ([]program.Progra
 		pgrams = append(pgrams, pgrams_...)
 	}
 
+	log.Ctx(ctx).Debug().Msg("successfully get onsen program")
 	return pgrams, nil
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/sobadon/anrd/domain/model/program"
 	"github.com/sobadon/anrd/domain/repository"
 	"github.com/sobadon/anrd/internal/errutil"
@@ -210,5 +211,6 @@ func (c *client) LoadOndemandScheduled(ctx context.Context) (*program.Program, e
 	}
 
 	pgram := programSqliteToModelProgram(pgramsSqlite[0])
+	log.Ctx(ctx).Debug().Msg("successfully load program (ondemand scheduled)")
 	return &pgram, nil
 }
