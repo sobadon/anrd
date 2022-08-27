@@ -53,17 +53,17 @@ func (mr *MockStationMockRecorder) GetPrograms(ctx, date interface{}) *gomock.Ca
 }
 
 // Rec mocks base method.
-func (m *MockStation) Rec(ctx context.Context, configRec recorder.Config, targetPgram program.Program) error {
+func (m *MockStation) Rec(ctx context.Context, config recorder.Config, targetPgram program.Program) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Rec", ctx, configRec, targetPgram)
+	ret := m.ctrl.Call(m, "Rec", ctx, config, targetPgram)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Rec indicates an expected call of Rec.
-func (mr *MockStationMockRecorder) Rec(ctx, configRec, targetPgram interface{}) *gomock.Call {
+func (mr *MockStationMockRecorder) Rec(ctx, config, targetPgram interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rec", reflect.TypeOf((*MockStation)(nil).Rec), ctx, configRec, targetPgram)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rec", reflect.TypeOf((*MockStation)(nil).Rec), ctx, config, targetPgram)
 }
 
 // MockProgramPersistence is a mock of ProgramPersistence interface.
@@ -104,10 +104,10 @@ func (mr *MockProgramPersistenceMockRecorder) ChangeStatus(ctx, pgram, newStatus
 }
 
 // LoadOndemandScheduled mocks base method.
-func (m *MockProgramPersistence) LoadOndemandScheduled(ctx context.Context) (*program.Program, error) {
+func (m *MockProgramPersistence) LoadOndemandScheduled(ctx context.Context) (*[]program.Program, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadOndemandScheduled", ctx)
-	ret0, _ := ret[0].(*program.Program)
+	ret0, _ := ret[0].(*[]program.Program)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

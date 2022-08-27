@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/sobadon/anrd/domain/model/date"
@@ -45,7 +46,7 @@ func (r *ucRecorder) UpdateProgram(ctx context.Context) error {
 }
 
 func (r *ucRecorder) RecPrepare(ctx context.Context, config recorder.Config) error {
-	targetPgram, err := r.programPersistence.LoadOndemandScheduled(ctx)
+	targetPgrams, err := r.programPersistence.LoadOndemandScheduled(ctx)
 	if errors.As(err, &errutil.ErrDatabaseNotFoundProgram) {
 		log.Ctx(ctx).Debug().Msg("not found program")
 		return nil
@@ -54,7 +55,12 @@ func (r *ucRecorder) RecPrepare(ctx context.Context, config recorder.Config) err
 		return err
 	}
 
-	go r.rec(ctx, config, *targetPgram)
+	for _, targetPgram := range *targetPgrams {
+		go r.rec(ctx, config, targetPgram)
+		// 一気に録画開始は負荷高そうなので気持ちズラす
+		time.Sleep(10 * time.Second)
+	}
+
 	return nil
 }
 

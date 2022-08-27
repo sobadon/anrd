@@ -198,10 +198,10 @@ func (c *client) ChangeStatus(ctx context.Context, pgram program.Program, newSta
 	return nil
 }
 
-func (c *client) LoadOndemandScheduled(ctx context.Context) (*program.Program, error) {
+func (c *client) LoadOndemandScheduled(ctx context.Context) (*[]program.Program, error) {
 	var pgramsSqlite []programSqlite
 	// playlist_url が null であれば何らかの会員限定コンテンツとする
-	err := c.DB.SelectContext(ctx, &pgramsSqlite, `select uuid, id, station, title, episode, start, end, status, stream_type, playlist_url from programs where status = 'scheduled' and playlist_url is not null limit 1`)
+	err := c.DB.SelectContext(ctx, &pgramsSqlite, `select uuid, id, station, title, episode, start, end, status, stream_type, playlist_url from programs where status = 'scheduled' and playlist_url is not null`)
 	if err != nil {
 		return nil, errors.Wrap(errutil.ErrDatabaseQuery, err.Error())
 	}
@@ -210,7 +210,11 @@ func (c *client) LoadOndemandScheduled(ctx context.Context) (*program.Program, e
 		return nil, errors.Wrap(errutil.ErrDatabaseNotFoundProgram, "not found program (scheduled ondemand)")
 	}
 
-	pgram := programSqliteToModelProgram(pgramsSqlite[0])
+	var pgrams []program.Program
+	for _, pgramSqlite := range pgramsSqlite {
+		pgram := programSqliteToModelProgram(pgramSqlite)
+		pgrams = append(pgrams, pgram)
+	}
 	log.Ctx(ctx).Debug().Msg("successfully load program (ondemand scheduled)")
-	return &pgram, nil
+	return &pgrams, nil
 }
