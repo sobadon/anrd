@@ -7,11 +7,15 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v6"
+	"github.com/go-co-op/gocron"
+	"github.com/pkg/errors"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/sobadon/anrd/domain/model/recorder"
 	"github.com/sobadon/anrd/infrastructures/onsen"
 	"github.com/sobadon/anrd/infrastructures/sqlite"
+	"github.com/sobadon/anrd/internal/errutil"
 	"github.com/sobadon/anrd/internal/logutil"
+	"github.com/sobadon/anrd/internal/timeutil"
 	"github.com/sobadon/anrd/usecase"
 	"github.com/spf13/cobra"
 )
@@ -61,10 +65,11 @@ func run() error {
 	ucRecorder := usecase.NewRecorder(infraProgramPersistence, stationOnsen)
 
 	ctx := context.Background()
-	ctx, _ = context.WithTimeout(ctx, 1*time.Minute)
+	scheduler := gocron.NewScheduler(timeutil.LocationJST())
 
-	jobUpdate := func(ctx context.Context) {
+	jobUpdate := func(ctx context.Context, job gocron.Job) {
 		ctx = logutil.NewLogger().With().
+			Int("job_count", job.RunCount()).
 			Str("job", "update").
 			Logger().WithContext(ctx)
 		zlog.Ctx(ctx).Info().Msg("job start")
@@ -73,17 +78,19 @@ func run() error {
 			zlog.Ctx(ctx).Error().Msgf("%+v", err)
 		}
 	}
-
-	// TODO: cron job
-	jobUpdate(ctx)
+	_, err = scheduler.Every(29*time.Minute).DoWithJobDetails(jobUpdate, ctx)
+	if err != nil {
+		return errors.Wrap(errutil.ErrScheduler, err.Error())
+	}
 
 	recorderConfig := recorder.Config{
 		ArchiveDir: config.ArchiveDir,
 		// TODO
 	}
 
-	jobRec := func(ctx context.Context) {
+	jobRec := func(ctx context.Context, job gocron.Job) {
 		ctx = logutil.NewLogger().With().
+			Int("job_count", job.RunCount()).
 			Str("job", "rec").
 			Logger().WithContext(ctx)
 
@@ -92,9 +99,16 @@ func run() error {
 			zlog.Ctx(ctx).Error().Msgf("%+v", err)
 		}
 	}
+	// broadcast タイプのことは考えない
+	// _, err = scheduler.Every(30*time.Second).DoWithJobDetails(jobRec, ctx)
+	// 今は ondemand のを取得のみ
+	_, err = scheduler.Every(5*time.Minute).DoWithJobDetails(jobRec, ctx)
+	if err != nil {
+		return errors.Wrap(errutil.ErrScheduler, err.Error())
+	}
 
-	// TODO: cron job
-	jobRec(ctx)
+	scheduler.StartAsync()
+	scheduler.RunAllWithDelay(10 * time.Second)
 
 	quit := make(chan os.Signal)
 	signal.Notify(quit, os.Interrupt)
