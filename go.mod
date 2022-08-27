@@ -11,4 +11,10 @@ require (
 	gopkg.in/dnaeon/go-vcr.v3 v3.1.0
 )
 
-require gopkg.in/yaml.v3 v3.0.1 // indirect
+require (
+	github.com/caarlos0/env/v6 v6.10.0
+	github.com/inconshreveable/mousetrap v1.0.1 // indirect
+	github.com/spf13/cobra v1.5.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+)
