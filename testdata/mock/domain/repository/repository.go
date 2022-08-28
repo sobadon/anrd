@@ -120,18 +120,18 @@ func (mr *MockProgramPersistenceMockRecorder) LoadBroadcastStartIn(ctx, now, dur
 }
 
 // LoadOndemandScheduled mocks base method.
-func (m *MockProgramPersistence) LoadOndemandScheduled(ctx context.Context) (*[]program.Program, error) {
+func (m *MockProgramPersistence) LoadOndemandScheduled(ctx context.Context, limit int) (*[]program.Program, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadOndemandScheduled", ctx)
+	ret := m.ctrl.Call(m, "LoadOndemandScheduled", ctx, limit)
 	ret0, _ := ret[0].(*[]program.Program)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // LoadOndemandScheduled indicates an expected call of LoadOndemandScheduled.
-func (mr *MockProgramPersistenceMockRecorder) LoadOndemandScheduled(ctx interface{}) *gomock.Call {
+func (mr *MockProgramPersistenceMockRecorder) LoadOndemandScheduled(ctx, limit interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOndemandScheduled", reflect.TypeOf((*MockProgramPersistence)(nil).LoadOndemandScheduled), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOndemandScheduled", reflect.TypeOf((*MockProgramPersistence)(nil).LoadOndemandScheduled), ctx, limit)
 }
 
 // Save mocks base method.

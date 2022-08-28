@@ -80,7 +80,8 @@ func (r *ucRecorder) RecBroadcastPrepare(ctx context.Context, config recorder.Co
 }
 
 func (r *ucRecorder) RecOndemandPrepare(ctx context.Context, config recorder.Config, now time.Time) error {
-	targetPgrams, err := r.programPersistence.LoadOndemandScheduled(ctx)
+	// あまり多いとリソース割かれちゃうので、ひとまず一気に 2 件
+	targetPgrams, err := r.programPersistence.LoadOndemandScheduled(ctx, 2)
 	if errors.As(err, &errutil.ErrDatabaseNotFoundProgram) {
 		log.Ctx(ctx).Debug().Msg("not found program")
 		return nil
@@ -92,7 +93,7 @@ func (r *ucRecorder) RecOndemandPrepare(ctx context.Context, config recorder.Con
 	for _, targetPgram := range *targetPgrams {
 		go r.rec(ctx, config, now, targetPgram)
 		// 一気に録画開始は負荷高そうなので気持ちズラす
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 	}
 
 	return nil

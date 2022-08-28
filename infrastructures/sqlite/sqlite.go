@@ -199,10 +199,10 @@ func (c *client) ChangeStatus(ctx context.Context, pgram program.Program, newSta
 	return nil
 }
 
-func (c *client) LoadOndemandScheduled(ctx context.Context) (*[]program.Program, error) {
+func (c *client) LoadOndemandScheduled(ctx context.Context, limit int) (*[]program.Program, error) {
 	var pgramsSqlite []programSqlite
 	// playlist_url が null であれば何らかの会員限定コンテンツとする
-	err := c.DB.SelectContext(ctx, &pgramsSqlite, `select uuid, id, station, title, episode, start, end, status, stream_type, playlist_url from programs where status = 'scheduled' and playlist_url is not null`)
+	err := c.DB.SelectContext(ctx, &pgramsSqlite, `select uuid, id, station, title, episode, start, end, status, stream_type, playlist_url from programs where status = 'scheduled' and playlist_url is not null limit ?`, limit)
 	if err != nil {
 		return nil, errors.Wrap(errutil.ErrDatabaseQuery, err.Error())
 	}

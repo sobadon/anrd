@@ -387,20 +387,30 @@ func Test_client_ChangeStatus(t *testing.T) {
 }
 
 func Test_client_LoadOndemandScheduled(t *testing.T) {
+	type args struct {
+		limit int
+	}
 	tests := []struct {
 		name    string
+		args    args
 		prepare func(db *sqlx.DB) error
 		want    *[]program.Program
 		wantErr error
 	}{
 		{
-			name:    "番組が存在しなければ ErrDatabaseNotFoundProgram を返す",
+			name: "番組が存在しなければ ErrDatabaseNotFoundProgram を返す",
+			args: args{
+				limit: 100,
+			},
 			prepare: func(db *sqlx.DB) error { return nil },
 			want:    nil,
 			wantErr: errutil.ErrDatabaseNotFoundProgram,
 		},
 		{
 			name: "正常に番組を返す",
+			args: args{
+				limit: 100,
+			},
 			prepare: func(db *sqlx.DB) error {
 				_, err := db.Exec(`insert into programs (uuid, id, station, title, episode, start, end, status, stream_type, playlist_url) values
 					("e07df7c6-eae8-40f8-8922-6b7ef0497dc8", "11132", "onsen", "セブン-イレブン presents 佐倉としたい大西", "第332回", "2022-08-21 00:00:00+09:00", "0001-01-01 00:00:00+00:00", "scheduled", "ondemand", null),
@@ -425,7 +435,37 @@ func Test_client_LoadOndemandScheduled(t *testing.T) {
 			},
 			wantErr: nil,
 		},
-		// TODO: 複数番組のテスト
+		{
+			name: "limit にて取得件数を指定できる",
+			args: args{
+				limit: 1,
+			},
+			prepare: func(db *sqlx.DB) error {
+				_, err := db.Exec(`insert into programs (uuid, id, station, title, episode, start, end, status, stream_type, playlist_url) values
+					("e07df7c6-eae8-40f8-8922-6b7ef0497dc8", "11132", "onsen", "セブン-イレブン presents 佐倉としたい大西", "第332回", "2022-08-21 00:00:00+09:00", "0001-01-01 00:00:00+00:00", "scheduled", "ondemand", null),
+					("4ba3b9ff-5e0b-44ae-a99d-6dfb27deac0e", "11133", "onsen", "セブン-イレブン presents 佐倉としたい大西", "第333回", "2022-08-22 00:00:00+09:00", "0001-01-01 00:00:00+00:00", "done", "ondemand", "https://onsen.test/playlist.m3u8"),
+					("89350da4-7f3b-4438-b99f-41ae9aa52bf5", "11134", "onsen", "セブン-イレブン presents 佐倉としたい大西", "第334回", "2022-08-23 00:00:00+09:00", "0001-01-01 00:00:00+00:00", "scheduled", "ondemand", "https://onsen.test/playlist.m3u8"),
+					("0dc3a01d-ddaa-4bc0-8714-3262e713940c", "11135", "onsen", "セブン-イレブン presents 佐倉としたい大西", "第335回", "2022-08-24 00:00:00+09:00", "0001-01-01 00:00:00+00:00", "scheduled", "ondemand", "https://onsen.test/playlist.m3u8")
+`)
+				return err
+			},
+			want: &[]program.Program{
+				{
+					UUID:        "89350da4-7f3b-4438-b99f-41ae9aa52bf5",
+					ID:          11134,
+					Station:     program.StationOnsen,
+					Title:       "セブン-イレブン presents 佐倉としたい大西",
+					Episode:     "第334回",
+					Start:       time.Date(2022, 8, 23, 0, 0, 0, 0, timeutil.LocationJST()),
+					End:         time.Time{},
+					Status:      program.StatusScheduled,
+					StreamType:  program.StreamTypeOndemand,
+					PlaylistURL: "https://onsen.test/playlist.m3u8",
+				},
+			},
+			wantErr: nil,
+		},
+		// 複数番組取得のテスト
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -449,7 +489,7 @@ func Test_client_LoadOndemandScheduled(t *testing.T) {
 			c := &client{
 				DB: db,
 			}
-			got, err := c.LoadOndemandScheduled(context.Background())
+			got, err := c.LoadOndemandScheduled(context.Background(), tt.args.limit)
 			if !testutil.ErrorsAs(err, tt.wantErr) {
 				t.Errorf("client.LoadOndemandScheduled() error = %v, wantErr %v", err, tt.wantErr)
 				return

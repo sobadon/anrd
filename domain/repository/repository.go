@@ -23,10 +23,10 @@ type ProgramPersistence interface {
 	// - errutil.ErrDatabaseNotFoundProgram
 	LoadBroadcastStartIn(ctx context.Context, now time.Time, duration time.Duration) ([]program.Program, error)
 
-	// StreamType が ondemand な番組で、scheduled なものを一件取得
+	// StreamType が ondemand な番組で、scheduled なものを limit 件取得
 	// 返されるエラー
 	// - errutil.ErrDatabaseNotFoundProgram
-	LoadOndemandScheduled(ctx context.Context) (*[]program.Program, error)
+	LoadOndemandScheduled(ctx context.Context, limit int) (*[]program.Program, error)
 
 	// pgram の status を newStatus に変更
 	ChangeStatus(ctx context.Context, pgram program.Program, newStatus program.Status) error
