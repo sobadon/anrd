@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"flag"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -11,28 +12,44 @@ import (
 	"github.com/sobadon/anrd/domain/model/recorder"
 	"github.com/sobadon/anrd/domain/repository"
 	"github.com/sobadon/anrd/internal/errutil"
+	"github.com/sobadon/anrd/internal/timeutil"
 )
 
 type ucRecorder struct {
 	programPersistence repository.ProgramPersistence
 	onsen              repository.Station
+	agqr               repository.Station
 }
 
 func NewRecorder(
 	programPersistence repository.ProgramPersistence,
 	onsen repository.Station,
+	agqr repository.Station,
 ) *ucRecorder {
 	return &ucRecorder{
 		programPersistence: programPersistence,
 		onsen:              onsen,
+		agqr:               agqr,
 	}
 }
 
 func (r *ucRecorder) UpdateProgram(ctx context.Context) error {
-	pgrams, err := r.onsen.GetPrograms(ctx, date.Date{})
+	var pgrams []program.Program
+
+	// 音泉
+	pgrams_temp, err := r.onsen.GetPrograms(ctx, date.Date{})
 	if err != nil {
 		return err
 	}
+	pgrams = append(pgrams, pgrams_temp...)
+
+	// agqr
+	now := time.Now().In(timeutil.LocationJST())
+	pgrams_temp, err = r.agqr.GetPrograms(ctx, date.NewFromToday(now))
+	if err != nil {
+		return err
+	}
+	pgrams = append(pgrams, pgrams_temp...)
 
 	for _, pgram := range pgrams {
 		err = r.programPersistence.Save(ctx, pgram)
@@ -45,7 +62,24 @@ func (r *ucRecorder) UpdateProgram(ctx context.Context) error {
 	return nil
 }
 
-func (r *ucRecorder) RecPrepare(ctx context.Context, config recorder.Config) error {
+func (r *ucRecorder) RecBroadcastPrepare(ctx context.Context, config recorder.Config, now time.Time) error {
+	targetPgrams, err := r.programPersistence.LoadBroadcastStartIn(ctx, now, config.PrepareAfter)
+	if errors.As(err, &errutil.ErrDatabaseNotFoundProgram) {
+		log.Ctx(ctx).Debug().Msg("not found program")
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	for _, targetPgram := range targetPgrams {
+		go r.rec(ctx, config, now, targetPgram)
+	}
+
+	return nil
+}
+
+func (r *ucRecorder) RecOndemandPrepare(ctx context.Context, config recorder.Config, now time.Time) error {
 	targetPgrams, err := r.programPersistence.LoadOndemandScheduled(ctx)
 	if errors.As(err, &errutil.ErrDatabaseNotFoundProgram) {
 		log.Ctx(ctx).Debug().Msg("not found program")
@@ -56,7 +90,7 @@ func (r *ucRecorder) RecPrepare(ctx context.Context, config recorder.Config) err
 	}
 
 	for _, targetPgram := range *targetPgrams {
-		go r.rec(ctx, config, targetPgram)
+		go r.rec(ctx, config, now, targetPgram)
 		// 一気に録画開始は負荷高そうなので気持ちズラす
 		time.Sleep(10 * time.Second)
 	}
@@ -68,7 +102,7 @@ func (r *ucRecorder) RecPrepare(ctx context.Context, config recorder.Config) err
 // 内部でリトライあり
 // これは goroutine として呼び出されることを想定
 // エラーが発生すればこの関数内でログ出力してしまう
-func (r *ucRecorder) rec(ctx context.Context, config recorder.Config, targetPgram program.Program) {
+func (r *ucRecorder) rec(ctx context.Context, config recorder.Config, now time.Time, targetPgram program.Program) {
 	// retryCount=0, 1, 2, 3 の計 4 回トライする
 	const retryMaxCount = 3
 	retryCount := 0
@@ -76,6 +110,16 @@ func (r *ucRecorder) rec(ctx context.Context, config recorder.Config, targetPgra
 	err := r.programPersistence.ChangeStatus(ctx, targetPgram, program.StatusRecording)
 	if err != nil {
 		return
+	}
+
+	if targetPgram.StreamType == program.StreamTypeBroadcast {
+		// ffmpeg 叩き前の sleep
+		sleepDuration := targetPgram.Start.Sub(now) - config.Margin
+		log.Ctx(ctx).Debug().Msgf("sleep ... (duration = %s)", sleepDuration)
+		if flag.Lookup("test.v") == nil {
+			// テスト実行時に time.Sleep() されると困っちゃうから無理くり無効に
+			time.Sleep(sleepDuration)
+		}
 	}
 
 	for retryCount <= retryMaxCount {

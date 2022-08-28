@@ -157,12 +157,10 @@ func (c *client) Save(ctx context.Context, pgram program.Program) error {
 	return nil
 }
 
-/*
-broadcast のときに使う 後で実装
-func (c *client) LoadStartIn(ctx context.Context, now time.Time, duration time.Duration) ([]program.Program, error) {
+func (c *client) LoadBroadcastStartIn(ctx context.Context, now time.Time, duration time.Duration) ([]program.Program, error) {
 	afterAbsoluteTime := now.Add(duration)
 
-	stmt, err := c.DB.PrepareNamedContext(ctx, `select id, title, start, end, status from programs where status = 'scheduled' and :now < start and start < :after`)
+	stmt, err := c.DB.PrepareNamedContext(ctx, `select uuid, id, station, title, episode, start, end, status, stream_type, playlist_url from programs where status = 'scheduled' and stream_type = 'broadcast' and :now < start and start < :after`)
 	if err != nil {
 		return nil, errors.Wrap(errutil.ErrDatabasePrepare, err.Error())
 	}
@@ -173,6 +171,10 @@ func (c *client) LoadStartIn(ctx context.Context, now time.Time, duration time.D
 		return nil, errors.Wrap(errutil.ErrDatabaseQuery, err.Error())
 	}
 
+	if len(pgramsSqlite) == 0 {
+		return nil, errors.Wrap(errutil.ErrDatabaseNotFoundProgram, "not found program")
+	}
+
 	var pgrams []program.Program
 	for _, pgramSqlite := range pgramsSqlite {
 		pgram := programSqliteToModelProgram(pgramSqlite)
@@ -181,7 +183,6 @@ func (c *client) LoadStartIn(ctx context.Context, now time.Time, duration time.D
 
 	return pgrams, nil
 }
-*/
 
 func (c *client) ChangeStatus(ctx context.Context, pgram program.Program, newStatus program.Status) error {
 	var oldStatus string

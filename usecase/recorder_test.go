@@ -15,6 +15,8 @@ import (
 )
 
 func Test_ucRecorder_rec(t *testing.T) {
+	now := time.Now().In(timeutil.LocationJST())
+
 	configCommon := recorder.Config{
 		ArchiveDir:   "/archive",
 		PrepareAfter: 2 * time.Minute,
@@ -127,7 +129,7 @@ func Test_ucRecorder_rec(t *testing.T) {
 				onsen:              mockOnsen,
 			}
 			tt.prepare(f)
-			r.rec(context.Background(), tt.args.config, tt.args.targetPgram)
+			r.rec(context.Background(), tt.args.config, now, tt.args.targetPgram)
 		})
 	}
 }

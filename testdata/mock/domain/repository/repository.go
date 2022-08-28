@@ -7,6 +7,7 @@ package mock_repository
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 	date "github.com/sobadon/anrd/domain/model/date"
@@ -101,6 +102,21 @@ func (m *MockProgramPersistence) ChangeStatus(ctx context.Context, pgram program
 func (mr *MockProgramPersistenceMockRecorder) ChangeStatus(ctx, pgram, newStatus interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeStatus", reflect.TypeOf((*MockProgramPersistence)(nil).ChangeStatus), ctx, pgram, newStatus)
+}
+
+// LoadBroadcastStartIn mocks base method.
+func (m *MockProgramPersistence) LoadBroadcastStartIn(ctx context.Context, now time.Time, duration time.Duration) ([]program.Program, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadBroadcastStartIn", ctx, now, duration)
+	ret0, _ := ret[0].([]program.Program)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LoadBroadcastStartIn indicates an expected call of LoadBroadcastStartIn.
+func (mr *MockProgramPersistenceMockRecorder) LoadBroadcastStartIn(ctx, now, duration interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadBroadcastStartIn", reflect.TypeOf((*MockProgramPersistence)(nil).LoadBroadcastStartIn), ctx, now, duration)
 }
 
 // LoadOndemandScheduled mocks base method.

@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/sobadon/anrd/domain/model/recorder"
+	"github.com/sobadon/anrd/infrastructures/agqr"
 	"github.com/sobadon/anrd/infrastructures/onsen"
 	"github.com/sobadon/anrd/infrastructures/sqlite"
 	"github.com/sobadon/anrd/internal/errutil"
@@ -62,7 +63,8 @@ func run() error {
 
 	infraProgramPersistence := sqlite.New(db)
 	stationOnsen := onsen.New()
-	ucRecorder := usecase.NewRecorder(infraProgramPersistence, stationOnsen)
+	stationAgqr := agqr.New()
+	ucRecorder := usecase.NewRecorder(infraProgramPersistence, stationOnsen, stationAgqr)
 
 	ctx := context.Background()
 	scheduler := gocron.NewScheduler(timeutil.LocationJST())
@@ -84,25 +86,39 @@ func run() error {
 	}
 
 	recorderConfig := recorder.Config{
-		ArchiveDir: config.ArchiveDir,
-		// TODO
+		ArchiveDir:   config.ArchiveDir,
+		PrepareAfter: config.PrepareAfter,
+		Margin:       config.Margin,
 	}
 
-	jobRec := func(ctx context.Context, job gocron.Job) {
+	jobRecOndemand := func(ctx context.Context, job gocron.Job) {
 		ctx = logutil.NewLogger().With().
 			Int("job_count", job.RunCount()).
-			Str("job", "rec").
+			Str("job", "rec_ondemand").
 			Logger().WithContext(ctx)
 
-		err = ucRecorder.RecPrepare(ctx, recorderConfig)
+		err = ucRecorder.RecOndemandPrepare(ctx, recorderConfig, time.Now().In(timeutil.LocationJST()))
 		if err != nil {
 			zlog.Ctx(ctx).Error().Msgf("%+v", err)
 		}
 	}
-	// broadcast タイプのことは考えない
-	// _, err = scheduler.Every(30*time.Second).DoWithJobDetails(jobRec, ctx)
-	// 今は ondemand のを取得のみ
-	_, err = scheduler.Every(5*time.Minute).DoWithJobDetails(jobRec, ctx)
+	_, err = scheduler.Every(5*time.Minute).DoWithJobDetails(jobRecOndemand, ctx)
+	if err != nil {
+		return errors.Wrap(errutil.ErrScheduler, err.Error())
+	}
+
+	jobRecBroadcast := func(ctx context.Context, job gocron.Job) {
+		ctx = logutil.NewLogger().With().
+			Int("job_count", job.RunCount()).
+			Str("job", "rec_broadcast").
+			Logger().WithContext(ctx)
+
+		err = ucRecorder.RecBroadcastPrepare(ctx, recorderConfig, time.Now().In(timeutil.LocationJST()))
+		if err != nil {
+			zlog.Ctx(ctx).Error().Msgf("%+v", err)
+		}
+	}
+	_, err = scheduler.Every(30*time.Second).DoWithJobDetails(jobRecBroadcast, ctx)
 	if err != nil {
 		return errors.Wrap(errutil.ErrScheduler, err.Error())
 	}

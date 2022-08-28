@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
@@ -153,6 +154,133 @@ func Test_client_Save(t *testing.T) {
 			}
 			if err := c.Save(context.Background(), tt.args.pgram); (err != nil) != tt.wantErr {
 				t.Errorf("client.Save() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_client_LoadBroadcastStartIn(t *testing.T) {
+	type args struct {
+		now      time.Time
+		duration time.Duration
+	}
+	tests := []struct {
+		name    string
+		prepare func(db *sqlx.DB) error
+		args    args
+		want    []program.Program
+		wantErr error
+	}{
+		{
+			name: "番組 1 つ取得できる",
+			prepare: func(db *sqlx.DB) error {
+				_, err := db.Exec(`insert into programs (uuid, id, station, title, episode, start, end, status, stream_type, playlist_url) values
+					("3824be0b-5103-4976-8d4f-212c53ac4999", "514529", "agqr", "テスト番組名", null, "2022-08-09 23:50:00+09:00", "2022-08-10 00:00:00+09:00", "recording", "broadcast", null),
+					("b7750840-3407-44a0-b670-2b08cb8e0eb3", "514530", "agqr", "鷲崎健のヨルナイト×ヨルナイト", null, "2022-08-10 00:00:00+09:00", "2022-08-10 00:30:00+09:00", "scheduled", "broadcast", null)
+				`)
+				return err
+			},
+			args: args{
+				now:      time.Date(2022, 8, 9, 23, 59, 30, 0, timeutil.LocationJST()),
+				duration: 1 * time.Minute,
+			},
+			want: []program.Program{
+				{
+					ID:         514530,
+					Station:    program.StationAgqr,
+					Title:      "鷲崎健のヨルナイト×ヨルナイト",
+					Start:      time.Date(2022, 8, 10, 0, 0, 0, 0, timeutil.LocationJST()),
+					End:        time.Date(2022, 8, 10, 0, 30, 0, 0, timeutil.LocationJST()),
+					Status:     program.StatusScheduled,
+					StreamType: program.StreamTypeBroadcast,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			// agqr で 2, 3 分間の番組ってないかも
+			name: "番組 2 つ取得できる",
+			prepare: func(db *sqlx.DB) error {
+				_, err := db.Exec(`insert into programs (uuid, id, station, title, episode, start, end, status, stream_type, playlist_url) values
+				("7d4af7b8-666f-48b0-b756-10ce4e3131a6", "514528", "agqr", "テスト番組名1", null, "2022-08-09 23:50:00+09:00", "2022-08-10 23:59:00+09:00", "recording", "broadcast", null),
+				("616b518b-063f-4ad0-b6de-a5c257886fe7", "514529", "agqr", "テスト番組名2", null, "2022-08-09 23:59:00+09:00", "2022-08-10 00:00:00+09:00", "scheduled", "broadcast", null),
+				("ea705dfe-17d3-412c-af7a-04071c63efdb", "514530", "agqr", "鷲崎健のヨルナイト×ヨルナイト", null, "2022-08-10 00:00:00+09:00", "2022-08-10 00:30:00+09:00", "scheduled", "broadcast", null)
+				`)
+				return err
+			},
+			args: args{
+				now:      time.Date(2022, 8, 9, 23, 58, 0, 0, timeutil.LocationJST()),
+				duration: 5 * time.Minute,
+			},
+			want: []program.Program{
+				{
+					ID:         514529,
+					Station:    program.StationAgqr,
+					Title:      "テスト番組名2",
+					Start:      time.Date(2022, 8, 9, 23, 59, 0, 0, timeutil.LocationJST()),
+					End:        time.Date(2022, 8, 10, 0, 0, 0, 0, timeutil.LocationJST()),
+					Status:     program.StatusScheduled,
+					StreamType: program.StreamTypeBroadcast,
+				},
+				{
+					ID:         514530,
+					Station:    program.StationAgqr,
+					Title:      "鷲崎健のヨルナイト×ヨルナイト",
+					Start:      time.Date(2022, 8, 10, 0, 0, 0, 0, timeutil.LocationJST()),
+					End:        time.Date(2022, 8, 10, 0, 30, 0, 0, timeutil.LocationJST()),
+					Status:     program.StatusScheduled,
+					StreamType: program.StreamTypeBroadcast,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "該当番組がなければ nil を返す",
+			prepare: func(db *sqlx.DB) error {
+				_, err := db.Exec(`insert into programs (uuid, id, station, title, episode, start, end, status, stream_type, playlist_url) values
+					("3824be0b-5103-4976-8d4f-212c53ac4999", "514529", "agqr", "テスト番組名", null, "2022-08-09 23:50:00+09:00", "2022-08-10 00:00:00+09:00", "done", "broadcast", null),
+					("b7750840-3407-44a0-b670-2b08cb8e0eb3", "514530", "agqr", "鷲崎健のヨルナイト×ヨルナイト", null, "2022-08-10 00:00:00+09:00", "2022-08-10 00:30:00+09:00", "recording", "broadcast", null)
+				`)
+				return err
+			},
+			args: args{
+				now:      time.Date(2022, 8, 10, 0, 10, 0, 0, timeutil.LocationJST()),
+				duration: 5 * time.Minute,
+			},
+			want:    nil,
+			wantErr: errutil.ErrDatabaseNotFoundProgram,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempFilename := tempFilename(t)
+			defer os.Remove(tempFilename)
+			db, err := sqlx.Open("sqlite3", tempFilename)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			p := &client{
+				DB: db,
+			}
+
+			err = Setup(p.DB)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = tt.prepare(p.DB)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := p.LoadBroadcastStartIn(context.Background(), tt.args.now, tt.args.duration)
+			if !testutil.ErrorsAs(err, tt.wantErr) {
+				t.Errorf("client.LoadBroadcastStartIn() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(tt.want, got, cmpopts.IgnoreFields(program.Program{}, "UUID")); diff != "" {
+				t.Errorf("client.LoadBroadcastStartIn() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
