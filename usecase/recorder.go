@@ -128,6 +128,8 @@ func (r *ucRecorder) rec(ctx context.Context, config recorder.Config, now time.T
 		switch targetPgram.Station {
 		case program.StationOnsen:
 			err = r.onsen.Rec(ctx, config, targetPgram)
+		case program.StationAgqr:
+			err = r.agqr.Rec(ctx, config, targetPgram)
 		}
 		if err == nil {
 			log.Ctx(ctx).Info().Msgf("successfully rec program (program = %+v)", targetPgram)
