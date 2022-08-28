@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/sobadon/anrd/domain/model/date"
 	"github.com/sobadon/anrd/domain/model/program"
 	"github.com/sobadon/anrd/internal/timeutil"
@@ -199,11 +200,16 @@ func Test_agqrProgramToProgram(t *testing.T) {
 				},
 			},
 			want: program.Program{
-				ID:     514579,
-				Title:  "セブン-イレブンpresents 佐倉としたい大西",
-				Start:  time.Date(2022, 8, 3, 11, 30, 0, 0, timeutil.LocationJST()),
-				End:    time.Date(2022, 8, 3, 12, 0, 0, 0, timeutil.LocationJST()),
-				Status: program.StatusScheduled,
+				// UUID: ***
+				ID:          514579,
+				Station:     program.StationAgqr,
+				Title:       "セブン-イレブンpresents 佐倉としたい大西",
+				Episode:     "",
+				Start:       time.Date(2022, 8, 3, 11, 30, 0, 0, timeutil.LocationJST()),
+				End:         time.Date(2022, 8, 3, 12, 0, 0, 0, timeutil.LocationJST()),
+				Status:      program.StatusScheduled,
+				StreamType:  program.StreamTypeBroadcast,
+				PlaylistURL: "",
 			},
 		},
 		{
@@ -225,11 +231,16 @@ func Test_agqrProgramToProgram(t *testing.T) {
 				},
 			},
 			want: program.Program{
-				ID:     514569,
-				Title:  "鷲崎健のヨルナイト×ヨルナイト",
-				Start:  time.Date(2022, 8, 4, 0, 0, 0, 0, timeutil.LocationJST()),
-				End:    time.Date(2022, 8, 4, 0, 30, 0, 0, timeutil.LocationJST()),
-				Status: program.StatusScheduled,
+				// UUID: ***
+				ID:          514569,
+				Station:     program.StationAgqr,
+				Title:       "鷲崎健のヨルナイト×ヨルナイト",
+				Episode:     "",
+				Start:       time.Date(2022, 8, 4, 0, 0, 0, 0, timeutil.LocationJST()),
+				End:         time.Date(2022, 8, 4, 0, 30, 0, 0, timeutil.LocationJST()),
+				Status:      program.StatusScheduled,
+				StreamType:  program.StreamTypeBroadcast,
+				PlaylistURL: "",
 			},
 		},
 	}
@@ -240,7 +251,7 @@ func Test_agqrProgramToProgram(t *testing.T) {
 				t.Errorf("agqrProgramToProgram() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+			if diff := cmp.Diff(tt.want, got, cmpopts.IgnoreFields(program.Program{}, "UUID")); diff != "" {
 				t.Errorf("agqrProgramToProgram() mismatch (-want +got):\n%s", diff)
 			}
 		})
