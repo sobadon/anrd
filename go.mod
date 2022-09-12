@@ -3,6 +3,8 @@ module github.com/sobadon/anrd
 go 1.19
 
 require (
+	github.com/go-co-op/gocron v1.17.0
+	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.8
 	github.com/google/uuid v1.3.0
 	github.com/jmoiron/sqlx v1.3.5
@@ -12,8 +14,6 @@ require (
 )
 
 require (
-	github.com/go-co-op/gocron v1.17.0 // indirect
-	github.com/golang/mock v1.6.0 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
@@ -25,10 +25,10 @@ require (
 )
 
 require (
-	github.com/caarlos0/env/v6 v6.10.0
+	github.com/caarlos0/env/v6 v6.10.1
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/rs/zerolog v1.27.0
-	github.com/spf13/cobra v1.5.0 // indirect
+	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
